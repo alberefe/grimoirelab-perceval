@@ -38,12 +38,16 @@ from grimoirelab_toolkit.introspect import find_signature_parameters
 from grimoirelab_toolkit.datetime import (datetime_utcnow,
                                           str_to_datetime,
                                           unixtime_to_datetime)
+
+from grimoirelab_toolkit.credential_manager.credential_manager import get_secret
+
 from .archive import Archive, ArchiveManager
 from .errors import ArchiveError, BackendError, BackendCommandArgumentParserError
 from ._version import __version__
 
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG) # remove when I finish TODO
 
 
 ARCHIVES_DEFAULT_PATH = '~/.perceval/archives/'
@@ -617,12 +621,14 @@ class BackendCommandArgumentParser:
 
     def __init__(self, backend, from_date=False, to_date=False, offset=False,
                  basic_auth=False, token_auth=False, archive=False,
-                 aliases=None, blacklist=False, ssl_verify=False):
+                 aliases=None, blacklist=False, ssl_verify=False, secrets_manager=False):
         self._from_date = from_date
         self._to_date = to_date
         self._archive = archive
         self._backend = backend
         self._ssl_verify = ssl_verify
+
+        self._secrets_manager = secrets_manager
 
         self.aliases = aliases or {}
         self.parser = argparse.ArgumentParser()
@@ -672,6 +678,9 @@ class BackendCommandArgumentParser:
         if ssl_verify:
             group.add_argument('--no-ssl-verify', dest='ssl_verify', action='store_false',
                                help="disable SSL verification")
+
+        if secrets_manager:
+            self._set_secrets_manager_arguments()
 
         self._set_output_arguments()
 
@@ -749,6 +758,27 @@ class BackendCommandArgumentParser:
         group.add_argument('--json-line', dest='json_line', action='store_true',
                            help="produce a JSON line for each output item")
 
+    def _set_secrets_manager_arguments(self):
+        """Activate secret manager arguments parsing"""
+
+        group = self.parser.add_argument_group('secrets manager authentication arguments')
+        group.add_argument('--secrets-manager', dest='secrets_manager',
+                           choices=['bitwarden','hashicorp','aws'],
+                           help="Secrets manager service to use for credential retrieval")
+        group.add_argument('--item-name', dest='item_name',
+                           help="Name of the file in the secrets manager that contains the key-value objects containing the credentials")
+        group.add_argument('--user-field', dest='user_field',
+                           help="Name of the username credential in the secrets manager")
+        group.add_argument('--email-field', dest='email_field',
+                           help="Name of the email credential in the secrets manager")
+        group.add_argument('--user-id-field', dest='user_id_field',
+                           help="Name of the user_id field in the secrets manager")
+        group.add_argument('--password-field', dest='password_field',
+                           help="Name of the password credential in the secrets manager")
+        group.add_argument('--token-field', dest='token_field',
+                           help="Name of the token/API key credential in the secrets manager")
+        group.add_argument('--access-token-field', dest='access_token_field',
+                           help="Name of the token/API key credential in the secrets manager")
 
 class BackendCommand:
     """Abstract class to run backends from the command line.
@@ -822,8 +852,81 @@ class BackendCommand:
                 logger.exception(f"Error!: {e}", exc_info=self.debug)
 
     def _pre_init(self):
-        """Override to execute before backend is initialized."""
-        pass
+        """Override to execute before backend is initialized.
+
+        I have overriden this method in case there's the parameter of secrets_manager, execute it and pass down
+        the value retrieved
+        """
+
+        if hasattr(self.parsed_args, 'secrets_manager') and self.parsed_args.secrets_manager:
+
+            logging.debug(
+                f"Processing credentials with {self.parsed_args.secrets_manager}"
+            )
+            logging.debug(f"Item name: {self.parsed_args.item_name}")
+            logging.debug(
+                f"Available field mappings: {[k for k in dir(self.parsed_args) if k.endswith('_field')]}"
+            )
+
+            try:
+                # Get username from secrets manager
+                if hasattr(self.parsed_args, 'user_field') and self.parsed_args.user_field:
+                    username = get_secret(
+                        self.parsed_args.secrets_manager,
+                        self.parsed_args.item_name,
+                        self.parsed_args.user_field
+                    )
+                    self.parsed_args.user = username
+
+                # Get password from secrets manager
+                if hasattr(self.parsed_args, 'password_field') and self.parsed_args.password_field:
+                    password = get_secret(
+                        self.parsed_args.secrets_manager,
+                        self.parsed_args.item_name,
+                        self.parsed_args.password_field
+                    )
+                    self.parsed_args.password = password
+
+                # Get email from secrets manager
+                if hasattr(self.parsed_args, 'email_field') and self.parsed_args.email_field:
+                    email = get_secret(
+                        self.parsed_args.secrets_manager,
+                        self.parsed_args.item_name,
+                        self.parsed_args.email_field
+                    )
+                    self.parsed_args.email = email
+
+                # Get token from secrets manager
+                if hasattr(self.parsed_args, 'token_field') and self.parsed_args.token_field:
+                    token = get_secret(
+                        self.parsed_args.secrets_manager,
+                        self.parsed_args.item_name,
+                        self.parsed_args.token_field
+                    )
+                    self.parsed_args.api_token = token
+
+                # Get access_token from secrets manager
+                if hasattr(self.parsed_args, 'access_token_field') and self.parsed_args.access_token_field:
+                    access_token = get_secret(
+                        self.parsed_args.secrets_manager,
+                        self.parsed_args.secret_name,
+                        self.parsed_args.access_token_field
+                    )
+                    self.parsed_args.access_token = access_token
+
+                # Get user_id from secrets manager
+                if hasattr(self.parsed_args, 'user_id_field') and self.parsed_args.user_id_field:
+                    user_id = get_secret(
+                        self.parsed_args.secrets_manager,
+                        self.parsed_args.secret_name,
+                        self.parsed_args.user_id_field
+                    )
+                    self.parsed_args.user_id = user_id
+
+            except ImportError:
+                logging.warning("Credential management module not found. Using command line credentials.")
+            except Exception as e:
+                logging.warning("Error retrieving credentials from secret manager: %s", str(e))
 
     def _post_init(self):
         """Override to execute after backend is initialized."""

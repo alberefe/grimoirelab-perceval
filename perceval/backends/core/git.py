@@ -427,7 +427,8 @@ class GitCommand(BackendCommand):
         parser = BackendCommandArgumentParser(cls.BACKEND,
                                               from_date=True,
                                               to_date=True,
-                                              ssl_verify=True)
+                                              ssl_verify=True,
+                                              secrets_manager=True)
 
         # Optional arguments
         group = parser.parser.add_argument_group('Git arguments')
@@ -1377,7 +1378,7 @@ class GitRepository:
 
         try:
             self._exec(cmd, cwd=self.dirpath, env=self.gitenv)
-        except RepositoryError as e:
+        except RepositoryError:
             logger.warning("Git %s ref could not be %s during sync process in %s (%s); skipped",
                            ref.refname, action, self.uri, self.dirpath)
         else:
