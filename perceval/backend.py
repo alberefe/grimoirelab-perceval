@@ -40,6 +40,7 @@ from grimoirelab_toolkit.datetime import (datetime_utcnow,
                                           unixtime_to_datetime)
 
 from grimoirelab_toolkit.credential_manager.credential_manager import get_secret
+from grimoirelab_toolkit.credential_manager.utils import build_url
 
 from .archive import Archive, ArchiveManager
 from .errors import ArchiveError, BackendError, BackendCommandArgumentParserError
@@ -852,81 +853,60 @@ class BackendCommand:
                 logger.exception(f"Error!: {e}", exc_info=self.debug)
 
     def _pre_init(self):
-        """Override to execute before backend is initialized.
-
-        I have overriden this method in case there's the parameter of secrets_manager, execute it and pass down
-        the value retrieved
         """
+        Override to execute before backend is initialized.
 
-        if hasattr(self.parsed_args, 'secrets_manager') and self.parsed_args.secrets_manager:
+        This method handles fetching credentials from a secrets manager,
+        injecting them into backend arguments, and building the final URI
+        for authentication.
+        """
+        if not (hasattr(self.parsed_args, 'secrets_manager') and self.parsed_args.secrets_manager):
+            return
 
-            logging.debug(
-                f"Processing credentials with {self.parsed_args.secrets_manager}"
-            )
-            logging.debug(f"Item name: {self.parsed_args.item_name}")
-            logging.debug(
-                f"Available field mappings: {[k for k in dir(self.parsed_args) if k.endswith('_field')]}"
-            )
+        logging.debug(f"Processing credentials with {self.parsed_args.secrets_manager}")
 
-            try:
-                # Get username from secrets manager
-                if hasattr(self.parsed_args, 'user_field') and self.parsed_args.user_field:
-                    username = get_secret(
-                        self.parsed_args.secrets_manager,
-                        self.parsed_args.item_name,
-                        self.parsed_args.user_field
-                    )
-                    self.parsed_args.user = username
+        try:
+            # Fetch credentials into local variables for immediate use
+            username = get_secret(self.parsed_args.secrets_manager, self.parsed_args.item_name, self.parsed_args.user_field) if hasattr(self.parsed_args, 'user_field') and self.parsed_args.user_field else None
+            password = get_secret(self.parsed_args.secrets_manager, self.parsed_args.item_name, self.parsed_args.password_field) if hasattr(self.parsed_args, 'password_field') and self.parsed_args.password_field else None
+            token = get_secret(self.parsed_args.secrets_manager, self.parsed_args.item_name, self.parsed_args.token_field) if hasattr(self.parsed_args, 'token_field') and self.parsed_args.token_field else None
+            email = get_secret(self.parsed_args.secrets_manager, self.parsed_args.item_name, self.parsed_args.email_field) if hasattr(self.parsed_args, 'email_field') and self.parsed_args.email_field else None
+            access_token = get_secret(self.parsed_args.secrets_manager, self.parsed_args.item_name, self.parsed_args.access_token_field) if hasattr(self.parsed_args, 'access_token_field') and self.parsed_args.access_token_field else None
+            user_id = get_secret(self.parsed_args.secrets_manager, self.parsed_args.item_name, self.parsed_args.user_id_field) if hasattr(self.parsed_args, 'user_id_field') and self.parsed_args.user_id_field else None
 
-                # Get password from secrets manager
-                if hasattr(self.parsed_args, 'password_field') and self.parsed_args.password_field:
-                    password = get_secret(
-                        self.parsed_args.secrets_manager,
-                        self.parsed_args.item_name,
-                        self.parsed_args.password_field
-                    )
-                    self.parsed_args.password = password
+            # Assign credentials to parsed_args for other parts of the application
+            if username:
+                self.parsed_args.user = username
+                logger.info(f"Using username from secrets manager: {username}")
+            if password:
+                self.parsed_args.password = password
+                logger.info(f"Using password from secrets manager: {password}")
+            if token:
+                self.parsed_args.api_token = token
+                logger.info(f"Using token from secrets manager: {token}")
+            if email:
+                self.parsed_args.email = email
+                logger.info(f"Using email from secrets manager: {email}")
+            if access_token:
+                self.parsed_args.access_token = access_token
+                logger.info(f"Using access token from secrets manager: {access_token}")
+            if user_id:
+                self.parsed_args.user_id = user_id
+                logger.info(f"Using user_id from secrets manager: {user_id}")
 
-                # Get email from secrets manager
-                if hasattr(self.parsed_args, 'email_field') and self.parsed_args.email_field:
-                    email = get_secret(
-                        self.parsed_args.secrets_manager,
-                        self.parsed_args.item_name,
-                        self.parsed_args.email_field
-                    )
-                    self.parsed_args.email = email
+            # Use the local variables to build the URI
+            if hasattr(self.parsed_args, 'uri') and self.parsed_args.uri:
+                base_uri = self.parsed_args.uri
+                new_uri = build_url(base_uri, username=username, password=password, token=token)
+                if new_uri != base_uri:
+                    self.parsed_args.uri = new_uri
+                    logger.info(f"Using URI from secrets manager: {new_uri}")
+                    logging.debug("Credentials successfully injected into URI")
 
-                # Get token from secrets manager
-                if hasattr(self.parsed_args, 'token_field') and self.parsed_args.token_field:
-                    token = get_secret(
-                        self.parsed_args.secrets_manager,
-                        self.parsed_args.item_name,
-                        self.parsed_args.token_field
-                    )
-                    self.parsed_args.api_token = token
-
-                # Get access_token from secrets manager
-                if hasattr(self.parsed_args, 'access_token_field') and self.parsed_args.access_token_field:
-                    access_token = get_secret(
-                        self.parsed_args.secrets_manager,
-                        self.parsed_args.secret_name,
-                        self.parsed_args.access_token_field
-                    )
-                    self.parsed_args.access_token = access_token
-
-                # Get user_id from secrets manager
-                if hasattr(self.parsed_args, 'user_id_field') and self.parsed_args.user_id_field:
-                    user_id = get_secret(
-                        self.parsed_args.secrets_manager,
-                        self.parsed_args.secret_name,
-                        self.parsed_args.user_id_field
-                    )
-                    self.parsed_args.user_id = user_id
-
-            except ImportError:
-                logging.warning("Credential management module not found. Using command line credentials.")
-            except Exception as e:
-                logging.warning("Error retrieving credentials from secret manager: %s", str(e))
+        except ImportError:
+            logging.warning("Credential management module not found. Using command line credentials.")
+        except Exception as e:
+            logging.warning("Error retrieving credentials from secret manager: %s", str(e))
 
     def _post_init(self):
         """Override to execute after backend is initialized."""

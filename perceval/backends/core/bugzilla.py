@@ -359,6 +359,7 @@ class BugzillaCommand(BackendCommand):
     def setup_cmd_parser(cls):
         """Returns the Bugzilla argument parser."""
 
+        # TODO: why secrets_manager=True?
         parser = BackendCommandArgumentParser(cls.BACKEND,
                                               from_date=True,
                                               basic_auth=True,

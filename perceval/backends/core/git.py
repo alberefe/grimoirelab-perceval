@@ -405,6 +405,10 @@ class GitCommand(BackendCommand):
     def _pre_init(self):
         """Initialize repositories directory path"""
 
+        # Call the parent _pre_init that I did with new arguments
+        super()._pre_init()
+
+
         if self.parsed_args.git_log:
             git_path = self.parsed_args.git_log
         elif self.parsed_args.git_path:
