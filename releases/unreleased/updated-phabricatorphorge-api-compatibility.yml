@@ -1,0 +1,8 @@
+---
+title: Updated Phabricator/Phorge API compatibility
+category: fixed
+author: Jose Javier Merchante <jjmerchante@bitergia.com>
+issue: 903
+notes: >
+  Improved compatibility with newer Phorge Conduit API endpoints.
+  User data from items are different from previous ones.
