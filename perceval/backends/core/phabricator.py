@@ -62,7 +62,7 @@ class Phabricator(Backend):
     :param ssl_verify: enable/disable SSL verification
     :param blacklist_ids: exclude the ids while fetching
     """
-    version = '1.0.0'
+    version = '2.0.0'
 
     CATEGORIES = [CATEGORY_TASK]
     ORIGIN_UNIQUE_FIELD = OriginUniqueField(name='id', type=int)
@@ -215,7 +215,7 @@ class Phabricator(Backend):
         """
         results = json.loads(raw_json)
 
-        users = results['result']
+        users = results['result']['data']
         for u in users:
             yield u
 
@@ -475,7 +475,7 @@ class ConduitClient(HttpClient):
     MANIPHEST_TASKS = 'maniphest.search'
     MANIPHEST_TRANSACTIONS = 'maniphest.gettasktransactions'
     PHAB_PHIDS = 'phid.query'
-    PHAB_USERS = 'user.query'
+    PHAB_USERS = 'user.search'
 
     PAFTER = 'after'
     PATTACHMENTS = 'attachments'
@@ -549,7 +549,9 @@ class ConduitClient(HttpClient):
         :params phids: list of users identifiers
         """
         params = {
-            self.PHIDS: phids
+            self.PCONSTRAINTS: {
+                self.PHIDS: phids
+            }
         }
 
         response = self._call(self.PHAB_USERS, params)
