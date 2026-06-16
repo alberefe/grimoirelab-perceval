@@ -329,6 +329,8 @@ class GroupsioCommand(BackendCommand):
     def _pre_init(self):
         """Initialize mailing lists directory path"""
 
+        super()._pre_init()
+
         if not self.parsed_args.mboxes_path:
             base_path = os.path.expanduser('~/.perceval/mailinglists/')
             dirpath = os.path.join(base_path, GROUPSIO_URL, 'g', self.parsed_args.group_name)
@@ -343,7 +345,8 @@ class GroupsioCommand(BackendCommand):
 
         parser = BackendCommandArgumentParser(cls.BACKEND,
                                               from_date=True,
-                                              ssl_verify=True)
+                                              ssl_verify=True,
+                                              secrets_manager=True)
 
         # Optional arguments
         group = parser.parser.add_argument_group('Groupsio arguments')

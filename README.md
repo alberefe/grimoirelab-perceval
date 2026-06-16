@@ -143,6 +143,19 @@ A Perceval Docker image is available at
 Detailed information on how to run and/or build this image can be found
 [here](https://github.com/chaoss/grimoirelab-perceval/tree/main/docker/images/).
 
+## Secrets Manager
+
+Perceval supports retrieving credentials from a secrets manager instead of
+passing them directly on the command line. This is useful for automated
+pipelines and environments where storing credentials in plain text is not
+acceptable.
+
+Supported providers are Bitwarden and HashiCorp Vault.
+
+See [docs/perceval/secrets-manager.md](docs/perceval/secrets-manager.md) for
+installation, supported backends, configuration, CLI examples, and
+programmatic usage.
+
 ## Documentation
 
 Documentation is generated automatically in the [ReadTheDocs Perceval

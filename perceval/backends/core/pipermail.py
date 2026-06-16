@@ -138,6 +138,8 @@ class PipermailCommand(BackendCommand):
     def _pre_init(self):
         """Initialize mailing lists directory path"""
 
+        super()._pre_init()
+
         if not self.parsed_args.mboxes_path:
             base_path = os.path.expanduser('~/.perceval/mailinglists/')
             dirpath = os.path.join(base_path, self.parsed_args.url)
