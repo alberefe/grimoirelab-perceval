@@ -54,14 +54,14 @@ lxml = ["lxml"]
 
 [[package]]
 name = "certifi"
-version = "2026.5.20"
+version = "2026.6.17"
 description = "Python package for providing Mozilla's CA Bundle."
 optional = false
 python-versions = ">=3.7"
 groups = ["main", "hashicorp-manager"]
 files = [
-    {file = "certifi-2026.5.20-py3-none-any.whl", hash = "sha256:3c52e209ba0a4ad7aebe60436a4ab349c39e1e602e8c134221e546902ad25897"},
-    {file = "certifi-2026.5.20.tar.gz", hash = "sha256:69dea482ab64caa7b9f6aba1c6bf48bb6a5448d1c0f1b17ab42ad8c763a5344d"},
+    {file = "certifi-2026.6.17-py3-none-any.whl", hash = "sha256:2227dcbaafe0d2f59279d1762ddddc37783ed4354594f194ffc31d20f41fc3db"},
+    {file = "certifi-2026.6.17.tar.gz", hash = "sha256:024c88eeec92ca068db80f02b8b07c9cef7b9fe261d1d535abfd5abd6f6af432"},
 ]
 
 [[package]]
@@ -629,14 +629,14 @@ sphinx-basic-ng = "*"
 
 [[package]]
 name = "grimoirelab-toolkit"
-version = "1.2.6"
+version = "1.2.7rc1"
 description = "Toolkit of common functions used across GrimoireLab"
 optional = false
 python-versions = "<4.0,>=3.10"
 groups = ["main"]
 files = [
-    {file = "grimoirelab_toolkit-1.2.6-py3-none-any.whl", hash = "sha256:0ecebf7a1d1073a2d27f414b687585bd898a139623380b40799a70d99da17b5d"},
-    {file = "grimoirelab_toolkit-1.2.6.tar.gz", hash = "sha256:abf00dc16f67a7a2cd0400e5ce1e36e8b705e28b026884fd969cea3a4b4225ed"},
+    {file = "grimoirelab_toolkit-1.2.7rc1-py3-none-any.whl", hash = "sha256:8463a7d6a88bbb16c8cac1d9c806b90e1fc8465f5e355357c1dd37794660cd15"},
+    {file = "grimoirelab_toolkit-1.2.7rc1.tar.gz", hash = "sha256:d3dae50c3fb635ecd9810e1e61aaf1dfaed2f362f122fa87f8b35a916acf0565"},
 ]
 
 [package.dependencies]
